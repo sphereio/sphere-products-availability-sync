@@ -3,7 +3,7 @@
   "description": "Sync product variants availability to an extra field (in order to be searchable)",
   "version": "0.0.1",
   "homepage": "https://github.com/sphereio/sphere-products-availability-sync",
-  "private": false,
+  "private": true,
   "author": {
     "name": "Nicola Molinari",
     "email": "nicola.molinari@commercetools.de"
