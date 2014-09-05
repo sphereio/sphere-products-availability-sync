@@ -1,0 +1,44 @@
+{
+  "name": "sphere-maximilian-products-availability-sync",
+  "description": "Sync product variants availability to an extra field (in order to be searchable)",
+  "version": "0.0.1",
+  "homepage": "https://github.com/commercetools/sphere-maximilian",
+  "private": true,
+  "author": {
+    "name": "Nicola Molinari",
+    "email": "nicola.molinari@commercetools.de"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/commercetools/sphere-maximilian.git"
+  },
+  "bugs": {
+    "url": "https://github.com/commercetools/sphere-maximilian/issues"
+  },
+  "main": "main.js",
+  "engines": {
+    "node": ">= 0.10.0"
+  },
+  "dependencies": {
+    "optimist": "0.6.1",
+    "lynx": "0.2.0",
+    "q": "1.0.1",
+    "sphere-node-client": "0.8.1",
+    "sphere-node-utils": "0.4.13",
+    "underscore": "1.6.0"
+  },
+  "devDependencies": {
+    "coveralls": "2.10.0",
+    "grunt": "0.4.4",
+    "grunt-bump": "0.0.13",
+    "grunt-coffeelint": "0.0.8",
+    "grunt-contrib-clean": "0.5.0",
+    "grunt-contrib-coffee": "0.10.1",
+    "grunt-contrib-concat": "0.4.0",
+    "grunt-contrib-watch": "0.6.1",
+    "grunt-shell": "0.6.4",
+    "istanbul": "0.2.7",
+    "jasmine-node": "1.13.1",
+    "statsd": "0.7.x"
+  }
+}
