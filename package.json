@@ -19,6 +19,9 @@
   "engines": {
     "node": ">= 0.10.0"
   },
+  "bin": {
+    "products-availability-sync": "./bin/products-availability-sync"
+  },
   "dependencies": {
     "optimist": "0.6.1",
     "lynx": "0.2.0",
