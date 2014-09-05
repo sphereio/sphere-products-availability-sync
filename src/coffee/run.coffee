@@ -10,10 +10,12 @@ argv = require('optimist')
   .describe('projectKey', 'your SPHERE.IO project-key')
   .describe('clientId', 'your SPHERE.IO OAuth client id')
   .describe('clientSecret', 'your SPHERE.IO OAuth client secret')
+  .describe('attributeName', 'the name of the product attribute to sync')
   .describe('timeout', 'timeout for requests')
   .describe('sphereHost', 'SPHERE.IO API host to connecto to')
   .describe('logLevel', 'log level for file logging')
   .describe('logDir', 'directory to store logs')
+  .default('attributeName', 'isOnStock')
   .default('timeout', 60000)
   .default('logLevel', 'info')
   .default('logDir', '.')
@@ -36,7 +38,7 @@ getSummaryReport = (prefix = 'Summary') =>
   "(Events from #{@summary.variants.count} variants: ADD[#{@summary.variants.event_add}], CHANGE[#{@summary.variants.event_change}], " +
   "REMOVE[#{@summary.variants.event_remove}], NOT_NEEDED[#{@summary.variants.event_not_needed}])"
 
-IS_ON_STOCK_ATTR_NAME = 'isOnStock'
+IS_ON_STOCK_ATTR_NAME = argv.attributeName
 
 logger = new Logger
   name: "#{package_json.name}-#{package_json.version}"
