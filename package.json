@@ -1,19 +1,19 @@
 {
-  "name": "sphere-maximilian-products-availability-sync",
+  "name": "sphere-products-availability-sync",
   "description": "Sync product variants availability to an extra field (in order to be searchable)",
   "version": "0.0.1",
-  "homepage": "https://github.com/commercetools/sphere-maximilian",
-  "private": true,
+  "homepage": "https://github.com/sphereio/sphere-products-availability-sync",
+  "private": false,
   "author": {
     "name": "Nicola Molinari",
     "email": "nicola.molinari@commercetools.de"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/commercetools/sphere-maximilian.git"
+    "url": "https://github.com/sphereio/sphere-products-availability-sync.git"
   },
   "bugs": {
-    "url": "https://github.com/commercetools/sphere-maximilian/issues"
+    "url": "https://github.com/sphereio/sphere-products-availability-sync/issues"
   },
   "main": "main.js",
   "engines": {

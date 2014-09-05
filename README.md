@@ -1,7 +1,8 @@
-sphere-maximilian-products-availability-sync
-=================
+![SPHERE.IO icon](https://admin.sphere.io/assets/images/sphere_logo_rgb_long.png)
 
-A script to update for each product variant the availability flag to a custom attribute (to allow searching by availability)
+# Node.js Products Availability Sync
+
+A script to update, for each product variant, the availability flag to a custom attribute (to allow searching by availability)
 
 ```bash
 $ npm install
