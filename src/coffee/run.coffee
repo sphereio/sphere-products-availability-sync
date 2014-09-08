@@ -135,7 +135,7 @@ ProjectCredentialsConfig.create()
         if _.size(actions) > 0
           payload =
             version: product.version
-            actions: buildActions()
+            actions: actions
           @summary.total++
           client.products.byId(product.id).update(payload)
         else
