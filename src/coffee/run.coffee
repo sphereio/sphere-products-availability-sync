@@ -38,6 +38,22 @@ getSummaryReport = (prefix = 'Summary') =>
   "(Events from #{@summary.variants.count} variants: ADD[#{@summary.variants.event_add}], CHANGE[#{@summary.variants.event_change}], " +
   "REMOVE[#{@summary.variants.event_remove}], NOT_NEEDED[#{@summary.variants.event_not_needed}])"
 
+sendMetrics = ->
+  metrics = new Lynx 'localhost', 8125,
+    on_error: -> #noop
+  # send metrics in batches (gauges)
+  metrics.send
+    'products_update.total': "#{@summary.total}|g"
+    'products_update.synced': "#{@summary.synced}|g"
+    'products_update.failed': "#{@summary.failed}|g"
+    'variants_update.count': "#{@summary.variants.count}|g"
+    'variants_update.added': "#{@summary.variants.event_add}|g"
+    'variants_update.changed': "#{@summary.variants.event_change}|g"
+    'variants_update.removed': "#{@summary.variants.event_remove}|g"
+    'variants_update.not_needed': "#{@summary.variants.event_not_needed}|g"
+  , 1
+
+
 IS_ON_STOCK_ATTR_NAME = argv.attributeName
 
 logger = new Logger
@@ -46,9 +62,6 @@ logger = new Logger
     { level: 'error', stream: process.stderr }
     { level: argv.logLevel, path: "#{argv.logDir}/#{package_json.name}.log" }
   ]
-
-metrics = new Lynx 'localhost', 8125,
-  on_error: -> #noop
 
 process.on 'SIGUSR2', -> logger.reopenFileStreams()
 process.on 'exit', => process.exit(@exitCode)
@@ -82,7 +95,6 @@ ProjectCredentialsConfig.create()
         buildActions = =>
           _.chain(allVariants).map (variant) =>
             @summary.variants.count++
-            metrics.increment 'variants_update.count'
             # check if it needs update
             isOnStockAttr = _.find variant.attributes, (a) -> a.name is IS_ON_STOCK_ATTR_NAME
 
@@ -97,29 +109,24 @@ ProjectCredentialsConfig.create()
               if variant.availability.isOnStock is isOnStockAttr.value
                 # same value, no update needed
                 @summary.variants.event_not_needed++
-                metrics.increment 'variants_update.not_needed'
                 null
               else
                 # different value => update attribute
                 @summary.variants.event_change++
-                metrics.increment 'variants_update.changed'
                 _action variant.availability.isOnStock
             else
               if isOnStockAttr
                 # no availability anymore => remove attribute
                 @summary.variants.event_remove++
-                metrics.increment 'variants_update.removed'
                 _action undefined
               else
                 if variant.availability
                   # availability is present but no attribute => add attribute
                   @summary.variants.event_add++
-                  metrics.increment 'variants_update.added'
                   _action variant.availability.isOnStock
                 else
                   # both availability and attribute are not preset => no update needed
                   @summary.variants.event_not_needed++
-                  metrics.increment 'variants_update.not_needed'
                   null
           .filter (action) -> not _.isNull action
           .value()
@@ -128,17 +135,14 @@ ProjectCredentialsConfig.create()
           version: product.version
           actions: buildActions()
         @summary.total++
-        metrics.increment 'products_update.count'
         client.products.byId(product.id).update(payload)
       .then (results) =>
         failures = []
         _.each results, (result) =>
           if result.state is 'fulfilled'
             @summary.synced++
-            metrics.increment 'products_update.synced'
           else
             @summary.failed++
-            metrics.increment 'products_update.failed'
             failures.push result.reason
         logger.debug getSummaryReport('Progress')
         if _.size(failures) > 0
@@ -147,6 +151,7 @@ ProjectCredentialsConfig.create()
     , {accumulate: false, maxParallel: 10}
   , {accumulate: false}
   .then =>
+    sendMetrics()
     logger.info getSummaryReport()
     @exitCode = 0
   .fail (error) =>
