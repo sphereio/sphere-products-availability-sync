@@ -38,7 +38,7 @@ getSummaryReport = (prefix = 'Summary') =>
   "(Events from #{@summary.variants.count} variants: ADD[#{@summary.variants.event_add}], CHANGE[#{@summary.variants.event_change}], " +
   "REMOVE[#{@summary.variants.event_remove}], NOT_NEEDED[#{@summary.variants.event_not_needed}])"
 
-sendMetrics = ->
+sendMetrics = =>
   metrics = new Lynx 'localhost', 8125,
     on_error: -> #noop
   # send metrics in batches (gauges)
@@ -84,10 +84,10 @@ ProjectCredentialsConfig.create()
   client.productProjections.staged(false).sort('id').all().process (payload) =>
     @totalProducts = payload.body.total unless @totalProducts
     products = payload.body.results
-    logger.info "Processing #{_.size products} products"
+    logger.debug "Processing #{_.size products} products"
 
     Qutils.processList products, (chunk) =>
-      logger.info "Updating #{_.size chunk} products in CHUNKS"
+      logger.debug "Updating #{_.size chunk} products in CHUNKS"
       Q.allSettled _.map chunk, (product) =>
 
         allVariants = [product.masterVariant].concat(product.variants or [])
@@ -131,11 +131,15 @@ ProjectCredentialsConfig.create()
           .filter (action) -> not _.isNull action
           .value()
 
-        payload =
-          version: product.version
-          actions: buildActions()
-        @summary.total++
-        client.products.byId(product.id).update(payload)
+        actions = buildActions()
+        if _.size(actions) > 0
+          payload =
+            version: product.version
+            actions: buildActions()
+          @summary.total++
+          client.products.byId(product.id).update(payload)
+        else
+          Q()
       .then (results) =>
         failures = []
         _.each results, (result) =>
