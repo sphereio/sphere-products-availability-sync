@@ -23,6 +23,11 @@ INVENTORY_ENTRIES = [
   {id: 3, sku: 's3', quantityOnStock: 0}
 ]
 
+PRODUCTS = [
+  {id: '123', masterVariant: VARIANTS[0]}
+]
+
+
 describe 'Availability service', ->
 
   beforeEach ->
@@ -111,4 +116,23 @@ describe 'Availability service', ->
       }
     ]
 
+  it 'should process products', (done) ->
+    spyOn(@availability.client.productProjections, 'process').andCallFake (fn, opts) ->
+      fn {statusCode: 200, body: {total: 1, results: PRODUCTS}}
+    spyOn(@availability.client.inventoryEntries, 'fetch').andCallFake -> Q(INVENTORY_ENTRIES)
+    spyOn(@availability.client.products, 'update').andCallFake -> Q {statusCode: 200}
+    @availability.run()
+    .then =>
+      expect(@availability.summary).toEqual
+        variants:
+          count: 1
+          event_add: 0
+          event_change: 1
+          event_remove: 0
+          event_not_needed: 0
+        total: 1
+        synced: 1
+        failed: 0
+      done()
+    .fail (e) -> done(e)
 

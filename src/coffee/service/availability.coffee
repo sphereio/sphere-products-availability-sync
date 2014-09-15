@@ -72,7 +72,7 @@ module.exports = class
             else
               @summary.failed++
               failures.push result.reason
-          @logger.debug getSummaryReport('Progress')
+          @logger.debug @getSummaryReport('Progress')
           if _.size(failures) > 0
             @logger.error errors: failures, 'Errors while syncing products'
           Q()
