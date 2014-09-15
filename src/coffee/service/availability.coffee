@@ -54,8 +54,8 @@ module.exports = class
           Qutils.processList allVariants, (variantsChunk) =>
             @expandVariants variantsChunk
           , {accumulate: true, maxParallel: 15}
-          .then (variants) =>
-            actions = @buildActions _.flatten(variants)
+          .then (expandedVariants) =>
+            actions = @buildActions _.flatten(expandedVariants)
             if _.size(actions) > 0
               payload =
                 version: product.version

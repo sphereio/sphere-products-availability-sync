@@ -1,8 +1,27 @@
+Q = require 'q'
+_ = require 'underscore'
 SphereClient = require 'sphere-node-client'
 {Logger} = require 'sphere-node-utils'
 AvailabilityService = require '../../lib/service/availability'
 package_json = require '../../package.json'
 Config = require '../../config'
+
+VARIANTS = [
+  {id: 1, sku: 's1', attributes: [{name: 'isOnStock', value: false}]}
+  {id: 2, sku: 's2', availability: {isOnStock: true}, attributes: [{name: 'isOnStock', value: true}]}
+  {id: 3, sku: 's3'}
+]
+
+EXPANDED_VARIANTS = [
+  {id: 1, sku: 's1', availability: {isOnStock: true}, attributes: [{name: 'isOnStock', value: false}]}
+  {id: 2, sku: 's2', attributes: [{name: 'isOnStock', value: true}]}
+  {id: 3, sku: 's3', availability: {isOnStock: false}}
+]
+
+INVENTORY_ENTRIES = [
+  {id: 1, sku: 's1', quantityOnStock: 10}
+  {id: 3, sku: 's3', quantityOnStock: 0}
+]
 
 describe 'Availability service', ->
 
@@ -35,17 +54,61 @@ describe 'Availability service', ->
       synced: 0
       failed: 0
 
-  it 'should generate summary report', ->
-    @availability.totalProducts = 10
-    @availability.summary =
-      variants:
-        count: 25
-        event_add: 5
-        event_change: 10
-        event_remove: 2
-        event_not_needed: 8
-      total: 10
-      synced: 8
-      failed: 2
-    'Summary: 8 synced / 2 failed from 10 / 10 products. (Events from 25 variants: ADD[5], CHANGE[10], REMOVE[2], NOT_NEEDED[8])'
+  _.each ['Summary', 'Progress'], (prefix) ->
+    it "should generate summary report with prefix #{prefix}", ->
+      @availability.totalProducts = 10
+      @availability.summary =
+        variants:
+          count: 25
+          event_add: 5
+          event_change: 10
+          event_remove: 2
+          event_not_needed: 8
+        total: 10
+        synced: 8
+        failed: 2
+      "#{prefix}: 8 synced / 2 failed from 10 / 10 products. (Events from 25 variants: ADD[5], CHANGE[10], REMOVE[2], NOT_NEEDED[8])"
+
+  it 'should expand variants (no inventory check)', (done) ->
+    @availability.expandVariants VARIANTS
+    .then (expanded) ->
+      expect(expanded).toEqual VARIANTS
+      done()
+    .fail (e) -> done(e)
+
+  it 'should expand variants (with inventory check)', (done) ->
+    spyOn(@availability.client.inventoryEntries, 'fetch').andCallFake -> Q(INVENTORY_ENTRIES)
+    @availability.withInventoryCheck = true
+    @availability.expandVariants VARIANTS
+    .then (expanded) ->
+      expect(expanded).toEqual EXPANDED_VARIANTS
+      done()
+    .fail (e) -> done(e)
+
+  it 'should build actions', ->
+    actions = @availability.buildActions EXPANDED_VARIANTS
+    expect(actions).toEqual [
+      {
+        action: 'setAttribute'
+        variantId: 1
+        name: 'isOnStock'
+        value: true
+        staged: false
+      },
+      {
+        action: 'setAttribute'
+        variantId: 2
+        name: 'isOnStock'
+        value: undefined
+        staged: false
+      },
+      {
+        action: 'setAttribute'
+        variantId: 3
+        name: 'isOnStock'
+        value: false
+        staged: false
+      }
+    ]
+
 
