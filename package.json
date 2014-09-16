@@ -22,6 +22,11 @@
   "bin": {
     "products-availability-sync": "./bin/products-availability-sync"
   },
+  "scripts": {
+    "build": "grunt build",
+    "postpublish": "rm -rf lib",
+    "test": "grunt coverage"
+  },
   "dependencies": {
     "optimist": "0.6.1",
     "lynx": "0.2.0",
