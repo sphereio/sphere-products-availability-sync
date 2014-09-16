@@ -82,7 +82,13 @@ describe 'Availability service', ->
     .fail (e) -> done(e)
 
   it 'should expand variants (with inventory check)', (done) ->
-    spyOn(@availability.client.inventoryEntries, 'fetch').andCallFake -> Q(INVENTORY_ENTRIES)
+    spyOn(@availability.client.inventoryEntries, 'fetch').andCallFake ->
+      Q
+        statusCode: 200
+        body:
+          count: _.size(INVENTORY_ENTRIES)
+          total: _.size(INVENTORY_ENTRIES)
+          results: INVENTORY_ENTRIES
     @availability.withInventoryCheck = true
     @availability.expandVariants VARIANTS
     .then (expanded) ->
@@ -119,10 +125,17 @@ describe 'Availability service', ->
   it 'should process products', (done) ->
     spyOn(@availability.client.productProjections, 'process').andCallFake (fn, opts) ->
       fn {statusCode: 200, body: {total: 1, results: PRODUCTS}}
-    spyOn(@availability.client.inventoryEntries, 'fetch').andCallFake -> Q(INVENTORY_ENTRIES)
+    spyOn(@availability.client.inventoryEntries, 'fetch').andCallFake ->
+      Q
+        statusCode: 200
+        body:
+          count: _.size(INVENTORY_ENTRIES)
+          total: _.size(INVENTORY_ENTRIES)
+          results: INVENTORY_ENTRIES
     spyOn(@availability.client.products, 'update').andCallFake -> Q {statusCode: 200}
     @availability.run()
-    .then =>
+    .then (result) =>
+      expect(_.isEmpty(result)).toBe true
       expect(@availability.summary).toEqual
         variants:
           count: 1

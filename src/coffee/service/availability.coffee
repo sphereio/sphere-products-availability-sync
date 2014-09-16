@@ -85,9 +85,10 @@ module.exports = class
       _.each variants, (v) ->
         ie.where("sku = \"#{v.sku}\"") if v.sku
       ie.fetch()
-      .then (result) ->
+      .then (result) =>
+        @logger.info "Found #{result.body.count} inventories (tot: #{result.body.total}) out of #{_.size variants} given variants"
         Q _.map variants, (v) ->
-          inventory = _.find result, (r) -> r.sku is v.sku
+          inventory = _.find result.body.results, (r) -> r.sku is v.sku
           if inventory
             v.availability =
               isOnStock: inventory.quantityOnStock > 0
