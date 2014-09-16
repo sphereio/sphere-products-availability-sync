@@ -40,6 +40,7 @@ module.exports = class
     , 1
 
   run: ->
+    @logger.info "Running with inventory check flag (#{@withInventoryCheck})"
     @client.productProjections.staged(false).sort('id').all().process (payload) =>
       @totalProducts = payload.body.total unless @totalProducts
       products = payload.body.results
@@ -86,7 +87,7 @@ module.exports = class
         ie.where("sku = \"#{v.sku}\"") if v.sku
       ie.fetch()
       .then (result) =>
-        @logger.info "Found #{result.body.count} inventories (tot: #{result.body.total}) out of #{_.size variants} given variants"
+        @logger.debug "Found #{result.body.count} inventories (tot: #{result.body.total}) out of #{_.size variants} given variants"
         Q _.map variants, (v) ->
           inventory = _.find result.body.results, (r) -> r.sku is v.sku
           if inventory
