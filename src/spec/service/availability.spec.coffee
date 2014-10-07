@@ -1,6 +1,6 @@
-Q = require 'q'
 _ = require 'underscore'
-SphereClient = require 'sphere-node-client'
+Promise = require 'bluebird'
+{SphereClient} = require 'sphere-node-sdk'
 {Logger} = require 'sphere-node-utils'
 AvailabilityService = require '../../lib/service/availability'
 package_json = require '../../package.json'
@@ -36,10 +36,7 @@ describe 'Availability service', ->
       streams: [
         { level: 'info', stream: process.stdout }
       ]
-    client = new SphereClient
-      config: Config.config
-      logConfig:
-        logger: logger
+    client = new SphereClient Config
     @availability = new AvailabilityService client, logger,
       withInventoryCheck: false
       attributeName: 'isOnStock'
@@ -79,11 +76,11 @@ describe 'Availability service', ->
     .then (expanded) ->
       expect(expanded).toEqual VARIANTS
       done()
-    .fail (e) -> done(e)
+    .catch (e) -> done(e)
 
   it 'should expand variants (with inventory check)', (done) ->
     spyOn(@availability.client.inventoryEntries, 'fetch').andCallFake ->
-      Q
+      Promise.resolve
         statusCode: 200
         body:
           count: _.size(INVENTORY_ENTRIES)
@@ -94,7 +91,7 @@ describe 'Availability service', ->
     .then (expanded) ->
       expect(expanded).toEqual EXPANDED_VARIANTS
       done()
-    .fail (e) -> done(e)
+    .catch (e) -> done(e)
 
   it 'should build actions', ->
     actions = @availability.buildActions EXPANDED_VARIANTS
@@ -126,13 +123,13 @@ describe 'Availability service', ->
     spyOn(@availability.client.productProjections, 'process').andCallFake (fn, opts) ->
       fn {statusCode: 200, body: {total: 1, results: PRODUCTS}}
     spyOn(@availability.client.inventoryEntries, 'fetch').andCallFake ->
-      Q
+      Promise.resolve
         statusCode: 200
         body:
           count: _.size(INVENTORY_ENTRIES)
           total: _.size(INVENTORY_ENTRIES)
           results: INVENTORY_ENTRIES
-    spyOn(@availability.client.products, 'update').andCallFake -> Q {statusCode: 200}
+    spyOn(@availability.client.products, 'update').andCallFake -> Promise.resolve {statusCode: 200}
     @availability.run()
     .then (result) =>
       expect(_.isEmpty(result)).toBe true
@@ -147,5 +144,4 @@ describe 'Availability service', ->
         synced: 1
         failed: 0
       done()
-    .fail (e) -> done(e)
-
+    .catch (e) -> done(e)

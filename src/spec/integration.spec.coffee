@@ -1,7 +1,7 @@
-Q = require 'q'
 _ = require 'underscore'
-_.mixin require('sphere-node-utils')._u
-SphereClient = require 'sphere-node-client'
+_.mixin require('underscore-mixins')
+Promise = require 'bluebird'
+{SphereClient} = require 'sphere-node-sdk'
 {Logger} = require 'sphere-node-utils'
 AvailabilityService = require '../lib/service/availability'
 package_json = require '../package.json'
@@ -59,10 +59,7 @@ describe 'Integration specs', ->
       streams: [
         { level: 'info', stream: process.stdout }
       ]
-    @client = new SphereClient
-      config: Config.config
-      logConfig:
-        logger: @logger
+    @client = new SphereClient Config
     @availability = new AvailabilityService @client, @logger,
       withInventoryCheck: true
       attributeName: 'isOnStock'
@@ -73,14 +70,14 @@ describe 'Integration specs', ->
       expect(result.statusCode).toBe 201
       @productType = result.body
       done()
-    .fail (error) =>
+    .catch (error) =>
       @logger.error error
       done(_.prettify(error))
 
   afterEach (done) ->
     @logger.debug 'Unpublishing all products'
     @client.products.sort('id').where('masterData(published = "true")').process (payload) =>
-      Q.all _.map payload.body.results, (product) =>
+      Promise.all _.map payload.body.results, (product) =>
         @client.products.byId(product.id).update(updateUnpublish(product.version))
     .then (results) =>
       @logger.info "Unpublished #{results.length} products"
@@ -88,7 +85,7 @@ describe 'Integration specs', ->
       @client.products.perPage(0).fetch()
     .then (payload) =>
       @logger.debug "Deleting #{payload.body.total} products"
-      Q.all _.map payload.body.results, (product) =>
+      Promise.all _.map payload.body.results, (product) =>
         @client.products.byId(product.id).delete(product.version)
     .then (results) =>
       @logger.info "Deleted #{results.length} products"
@@ -96,12 +93,12 @@ describe 'Integration specs', ->
       @client.productTypes.perPage(0).fetch()
     .then (payload) =>
       @logger.debug "Deleting #{payload.body.total} product types"
-      Q.all _.map payload.body.results, (productType) =>
+      Promise.all _.map payload.body.results, (productType) =>
         @client.productTypes.byId(productType.id).delete(productType.version)
     .then (results) =>
       @logger.debug "Deleted #{results.length} product types"
       @client.inventoryEntries.all().process (payload) =>
-        Q.all _.map payload.body.results, (inventoryEntry) =>
+        Promise.all _.map payload.body.results, (inventoryEntry) =>
           @client.inventoryEntries.byId(inventoryEntry.id).delete(inventoryEntry.version)
     .then (results) =>
       @logger.info "Deleted #{results.length} inventory entries"
@@ -110,7 +107,7 @@ describe 'Integration specs', ->
       @availability = null
       @productType = null
       done()
-    .fail (error) =>
+    .catch (error) =>
       @logger.error error
       done(_.prettify(error))
   , 60000 # 1min
@@ -125,7 +122,7 @@ describe 'Integration specs', ->
 
   it 'should sync availability with inventory check', (done) ->
     stocks = [{sku: 's1', onStock: 10}, {sku: 's2', onStock: 0}, {sku: 's3', onStock: 30}]
-    Q.all _.map stocks, (stock) => @client.inventoryEntries.create(newInventoryEntry(stock))
+    Promise.all _.map stocks, (stock) => @client.inventoryEntries.create(newInventoryEntry(stock))
     .then (result) =>
       @logger.debug "Created #{_.size result} inventory entries"
       inventoryEntries = _.map result, (r) -> r.body
@@ -138,7 +135,7 @@ describe 'Integration specs', ->
         allVariants = [result.body.masterVariant].concat(result.body.variants)
         _.each allVariants, (v) -> expect(v.availability).not.toBeDefined()
         @logger.debug "About to publish product with id #{product.id}"
-        @client.products.byId(product.id).update(updatePublish(product.version))
+        @client.products.byId(product.id).update(updatePublish(result.body.version))
       .then =>
         @logger.debug 'About to run availability sync'
         @availability.run()
@@ -158,6 +155,6 @@ describe 'Integration specs', ->
           else
             expect(_.size(v.attributes)).toBe 0 # masterVariant case
         done()
-    .fail (error) =>
+    .catch (error) =>
       @logger.error error
       done(_.prettify(error))

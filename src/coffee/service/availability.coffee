@@ -1,7 +1,7 @@
-Q = require 'q'
 _ = require 'underscore'
+_.mixin require('underscore-mixins')
+Promise = require 'bluebird'
 Lynx = require 'lynx'
-{Qutils} = require 'sphere-node-utils'
 
 module.exports = class
 
@@ -41,43 +41,40 @@ module.exports = class
 
   run: ->
     @logger.info "Running with inventory check flag (#{@withInventoryCheck})"
-    @client.productProjections.staged(false).sort('id').all().process (payload) =>
+    @client.productProjections.staged(false).sort('id').perPage(10).process (payload) =>
       @totalProducts = payload.body.total unless @totalProducts
       products = payload.body.results
       @logger.debug "Processing #{_.size products} products"
 
-      Qutils.processList products, (chunk) =>
-        @logger.debug "Updating #{_.size chunk} products in CHUNKS"
-        Q.allSettled _.map chunk, (product) =>
+      Promise.settle _.map products, (product) =>
 
-          allVariants = [product.masterVariant].concat(product.variants or [])
+        allVariants = [product.masterVariant].concat(product.variants or [])
 
-          Qutils.processList allVariants, (variantsChunk) =>
-            @expandVariants variantsChunk
-          , {accumulate: true, maxParallel: 15}
-          .then (expandedVariants) =>
-            actions = @buildActions _.flatten(expandedVariants)
-            if _.size(actions) > 0
-              payload =
-                version: product.version
-                actions: actions
-              @summary.total++
-              @client.products.byId(product.id).update(payload)
-            else
-              Q()
-        .then (results) =>
-          failures = []
-          _.each results, (result) =>
-            if result.state is 'fulfilled'
-              @summary.synced++
-            else
-              @summary.failed++
-              failures.push result.reason
-          @logger.debug @getSummaryReport('Progress')
-          if _.size(failures) > 0
-            @logger.error errors: failures, 'Errors while syncing products'
-          Q()
-      , {accumulate: false, maxParallel: 10}
+        Promise.map _.batchList(allVariants, 15), (variantsChunk) =>
+          @expandVariants variantsChunk
+        , {concurrency: 1} # run 1 batch at a time
+        .then (expandedVariants) =>
+          actions = @buildActions _.flatten(expandedVariants)
+          if _.size(actions) > 0
+            payload =
+              version: product.version
+              actions: actions
+            @summary.total++
+            @client.products.byId(product.id).update(payload)
+          else
+            Promise.resolve()
+      .then (results) =>
+        failures = []
+        _.each results, (result) =>
+          if result.isFulfilled()
+            @summary.synced++
+          if result.isRejected()
+            @summary.failed++
+            failures.push result.reason()
+        @logger.debug @getSummaryReport('Progress')
+        if _.size(failures) > 0
+          @logger.error errors: failures, 'Errors while syncing products'
+        Promise.resolve()
     , {accumulate: false}
 
   expandVariants: (variants) ->
@@ -88,7 +85,7 @@ module.exports = class
       ie.fetch()
       .then (result) =>
         @logger.debug "Found #{result.body.count} inventories (tot: #{result.body.total}) out of #{_.size variants} given variants"
-        Q _.map variants, (v) ->
+        Promise.resolve _.map variants, (v) ->
           inventory = _.find result.body.results, (r) -> r.sku is v.sku
           if inventory
             v.availability =
@@ -97,7 +94,7 @@ module.exports = class
             v.availability = undefined
           v
     else
-      Q variants
+      Promise.resolve variants
 
   buildActions: (variants) ->
     _.chain(variants).map (variant) =>

@@ -1,4 +1,4 @@
-SphereClient = require 'sphere-node-client'
+{SphereClient} = require 'sphere-node-sdk'
 {Logger, ProjectCredentialsConfig} = require 'sphere-node-utils'
 package_json = require '../package.json'
 AvailabilityService = require './service/availability'
@@ -41,8 +41,6 @@ ProjectCredentialsConfig.create()
       client_secret: argv.clientSecret
     timeout: argv.timeout
     user_agent: "#{package_json.name} - #{package_json.version}"
-    logConfig:
-      logger: logger
   options.host = argv.sphereHost if argv.sphereHost?
 
   client = new SphereClient options
@@ -55,11 +53,11 @@ ProjectCredentialsConfig.create()
     availability.sendMetrics()
     logger.info availability.getSummaryReport()
     @exitCode = 0
-  .fail (error) =>
+  .catch (error) =>
     logger.error error, 'Oops, something went wrong!'
     @exitCode = 1
   .done()
-.fail (error) =>
+.catch (error) =>
   logger.error error, 'Problems on getting client credentials from config files.'
   @exitCode = 1
 .done()

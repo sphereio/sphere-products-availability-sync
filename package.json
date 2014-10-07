@@ -27,12 +27,13 @@
     "test": "grunt coverage"
   },
   "dependencies": {
-    "optimist": "0.6.1",
+    "bluebird": "2.3.x",
     "lynx": "0.2.0",
-    "q": "1.0.1",
-    "sphere-node-client": "0.8.1",
-    "sphere-node-utils": "0.4.13",
-    "underscore": "1.6.0"
+    "optimist": "0.6.1",
+    "sphere-node-sdk": "1.0.0-rc1",
+    "sphere-node-utils": "0.5.1",
+    "underscore": "1.7.0",
+    "underscore-mixins": "*"
   },
   "devDependencies": {
     "coveralls": "2.10.0",
