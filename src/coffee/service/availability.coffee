@@ -80,9 +80,10 @@ module.exports = class
   expandVariants: (variants) ->
     if @withInventoryCheck
 
-      skus = ""
-      _.each variants, (v) ->
-        skus += "\"#{v.sku}\"" if v.sku
+      withSkus = _.filter variants, (v) ->
+        v.sku
+      skus = _.map withSkus, (v) ->
+        "\"#{v.sku}\""
 
       predicate = "sku in (#{skus.join(', ')})"
 
