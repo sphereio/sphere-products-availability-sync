@@ -79,10 +79,16 @@ module.exports = class
 
   expandVariants: (variants) ->
     if @withInventoryCheck
-      ie = @client.inventoryEntries.all().whereOperator('or')
+
+      skus = ""
       _.each variants, (v) ->
-        ie.where("sku = \"#{v.sku}\"") if v.sku
-      ie.fetch()
+        skus += "\"#{v.sku}\"" if v.sku
+
+      predicate = "sku in (#{skus.join(', ')})"
+
+      @client.inventoryEntries.all()
+      .where(predicate)
+      .fetch()
       .then (result) =>
         @logger.debug "Found #{result.body.count} inventories (tot: #{result.body.total}) out of #{_.size variants} given variants"
         Promise.resolve _.map variants, (v) ->
