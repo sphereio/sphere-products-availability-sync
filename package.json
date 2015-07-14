@@ -1,7 +1,7 @@
 {
   "name": "sphere-products-availability-sync",
   "description": "Sync product variants availability to an extra field (in order to be searchable)",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "homepage": "https://github.com/sphereio/sphere-products-availability-sync",
   "private": false,
   "author": {
